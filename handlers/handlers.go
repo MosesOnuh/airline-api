@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"fmt"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/MosesOnuh/airline-api/Db"
 	"github.com/MosesOnuh/airline-api/auth"
@@ -77,7 +77,7 @@ func SignupHandler(c *gin.Context) {
 	})
 }
 
-func LoginHandler (c *gin.Context) {
+func LoginHandler(c *gin.Context) {
 	type loginDetails struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -133,7 +133,7 @@ func GetAllUserHandler(c *gin.Context) {
 // getallFlight
 // getSingleflight
 
-func CreateFlightHandler (c *gin.Context){
+func CreateFlightHandler(c *gin.Context) {
 	authorization := c.Request.Header.Get("Authorization")
 	if authorization == "" {
 		c.JSON(401, gin.H{
@@ -144,7 +144,7 @@ func CreateFlightHandler (c *gin.Context){
 
 	payload := ""
 	splitTokenArray := strings.Split(authorization, "")
-	if len(splitTokenArray) > 1{
+	if len(splitTokenArray) > 1 {
 		payload = splitTokenArray[1]
 	}
 	claims, err := auth.ValidToken(payload)
@@ -165,15 +165,15 @@ func CreateFlightHandler (c *gin.Context){
 	flightId := uuid.NewV4().String()
 
 	flight := models.Flight{
-			ID :                    flightId,        
-			Country:                flightDetails.Country,
-			Admin_Id:               claims.Id,         
-			Departure_location:     flightDetails.Departure_location, 
-			Arrival_location:       flightDetails.Arrival_location,  
-			Departure_time:         flightDetails.Departure_time,  
-			Arrival_time:           flightDetails.Arrival_time,
-			Price:                  flightDetails.Price,         
-			Available_Seats:        flightDetails.Available_Seats,  
+		ID:                 flightId,
+		Country:            flightDetails.Country,
+		Admin_Id:           claims.Id,
+		Departure_location: flightDetails.Departure_location,
+		Arrival_location:   flightDetails.Arrival_location,
+		Departure_time:     flightDetails.Departure_time,
+		Arrival_time:       flightDetails.Arrival_time,
+		Price:              flightDetails.Price,
+		Available_seats:    flightDetails.Available_seats,
 	}
 
 	_, err = Db.CreateFlight(&flight)
@@ -185,11 +185,11 @@ func CreateFlightHandler (c *gin.Context){
 	}
 	c.JSON(200, gin.H{
 		"message": "successfully created flight",
-		"data": flight,
+		"data":    flight,
 	})
 }
 
-func GetSingleFlightHandler (c *gin.Context) {
+func GetSingleFlightHandler(c *gin.Context) {
 	taskId := c.Param("id")
 	task, err := Db.GetFlightByID(taskId)
 	if err != nil {
@@ -200,6 +200,64 @@ func GetSingleFlightHandler (c *gin.Context) {
 	}
 	c.JSON(200, gin.H{
 		"message": "success",
-		"data": task,
+		"data":    task,
 	})
+}
+
+func UpdateFlightHandler(c *gin.Context) {
+	flightId := c.Param("id")
+
+	var flight models.Flight
+	err := c.ShouldBindJSON(&flight)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": "invalid request data",
+		})
+		return
+	}
+	err = Db.UpdateFlight(flightId, flight.Country, flight.Departure_location, flight.Arrival_location, flight.Departure_time, flight.Arrival_time, flight.Price, flight.Available_seats)
+	if err != nil {
+		c.JSON(500, gin.H{
+			"error": "Flight could not be updated",
+		})
+		return
+	}
+	c.JSON(200, gin.H{
+		"message": "Task updated",
+	})
+}
+
+func DeleteTaskHandler(c *gin.Context) {
+	authorization := c.Request.Header.Get("Authorization")
+	if authorization == "" {
+		c.JSON(401, gin.H{
+			"error": "auth token not supplied",
+		})
+		return
+	}
+
+	payload := ""
+	splitTokenArray := strings.Split(authorization, "")
+	if len(splitTokenArray) > 1 {
+		payload = splitTokenArray[1]
+	}
+	claims, err := auth.ValidToken(payload)
+	if err != nil {
+		c.JSON(401, gin.H{
+			"error": "invalid jwt token",
+		})
+		return
+	}
+
+	flightid := c.Param("id")
+	err = Db.DeleteFlight(flightId, claims.UserId)
+	if err != nil {
+		c.JSON(500, gin.H{
+			"error": "flight could not be deleted",
+		})
+		c.JSON(200, gin.H{
+			"message": "Task deleted",
+		})
+	}
+
 }

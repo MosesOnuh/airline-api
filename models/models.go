@@ -27,7 +27,7 @@ type Flight struct {
 	Departure_time     string `json:"departure_time" bson:"departure_time"`
 	Arrival_time       string `json:"arrival_time" bson:"arrival_time"`
 	Price              int    `json:"price" bson:"price"`
-	Available_Seats    int    `json:"available_seats" bson:"available_seats"`
+	Available_seats    int    `json:"available_seats" bson:"available_seats"`
 }
 
 type Ticket struct {

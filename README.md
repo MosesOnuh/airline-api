@@ -24,13 +24,14 @@ CreateTicket
 SignupHandler
 login
 getalluser
-update user
+/update user
 
 
 Post flight
 getallFlight
 getSingleflight
 update flight
+/delete flight
 
 post ticket
 get ticket

@@ -96,6 +96,51 @@ func GetFlightByID (flightId string)(*models.Flight, error){
 	 return &flight, nil
 }
 
+func UpdateFlight (
+	flightId string,
+	 Country string,
+	 Departure_location string,
+	 Arrival_location string,
+	 Departure_time string,
+	 Arrival_time string,
+	 Price int,
+	 Available_seats int) error {
+
+	filterQuery := bson.M{
+	"id": flightId,
+	}
+	updateQuery := bson.M{
+		"$set": bson.M{
+			"country ": Country,
+			"departure_location": Departure_location,
+			"arrival_location": Arrival_location,
+			"departure_time": Departure_time,
+			"arrival_time": Arrival_time,
+			"price": Price,
+			"available_seats": Available_seats,
+		},
+	}
+
+	_, err := DbClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("FLIGHT_COLLECTION")).UpdateOne(context.Background(),filterQuery, updateQuery)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func Deleteflight(flightId, AdminId string) error {
+	query := bson.M{
+		"id": "flightId",
+		"admin_id": "AdminId",
+	}
+	_, err := DbClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("FLIGHT_COLLECTION")).DeleteOne(context.Background(), query)
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
 
 // func CreateTicket (ticket *models.Ticket) (*models.Ticket, error) {
 // 	_, err := DbClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("TICKET_COLLECTION")).InsertOne(context.Background(), ticket)
