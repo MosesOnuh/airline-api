@@ -9,12 +9,17 @@ import (
     "go.mongodb.org/mongo-driver/mongo/options"
     // "go.mongodb.org/mongo-driver/mongo/readpref"
     "go.mongodb.org/mongo-driver/bson"
+	// "github.com/joho/godotenv"
 
 )
 
-
 var DbClient *mongo.Client
 func init() {
+	// err := godotenv.Load
+	// if err != nil {
+	// 	log.Fatalf("Could not connect to the database %v\n", err)
+	// }
+	
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_ADDRESS")))
@@ -52,6 +57,9 @@ func GetAllUsers() ([]models.User, error) {
 		return nil, err
 	}
 	err = cursor.All(context.Background(), &users)
+	if err != nil {
+		return nil, err
+	}
 	return users, nil
 }
 
@@ -81,6 +89,9 @@ func GetAllFlight ()([]models.Flight, error){
 		return nil, err
 	}
 	err = cursor.All(context.Background(), &flight)
+	if err != nil {
+		return nil, err
+	}
 	return flight, nil
 }
 
@@ -128,7 +139,7 @@ func UpdateFlight (
 	return nil
 }
 
-func Deleteflight(flightId, AdminId string) error {
+func DeleteFlight(flightId, AdminId string) error {
 	query := bson.M{
 		"id": "flightId",
 		"admin_id": "AdminId",

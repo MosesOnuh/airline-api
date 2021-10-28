@@ -227,7 +227,7 @@ func UpdateFlightHandler(c *gin.Context) {
 	})
 }
 
-func DeleteTaskHandler(c *gin.Context) {
+func DeleteFlightHandler(c *gin.Context) {
 	authorization := c.Request.Header.Get("Authorization")
 	if authorization == "" {
 		c.JSON(401, gin.H{
@@ -249,7 +249,8 @@ func DeleteTaskHandler(c *gin.Context) {
 		return
 	}
 
-	flightid := c.Param("id")
+	flightId := c.Param("id")
+
 	err = Db.DeleteFlight(flightId, claims.UserId)
 	if err != nil {
 		c.JSON(500, gin.H{

@@ -21,15 +21,15 @@ CreateTicket
 
 
        for handlers
-SignupHandler
-login
-getalluser
+SignupHandler*
+login*
+getalluser*
 /update user
 
 
-Post flight
+Post flight*
 getallFlight
-getSingleflight
+//getSingleflight
 update flight
 /delete flight
 
