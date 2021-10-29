@@ -7,39 +7,61 @@ import (
 	"github.com/MosesOnuh/airline-api/models"
     "go.mongodb.org/mongo-driver/mongo"
     "go.mongodb.org/mongo-driver/mongo/options"
-    // "go.mongodb.org/mongo-driver/mongo/readpref"
+    "go.mongodb.org/mongo-driver/mongo/readpref"
     "go.mongodb.org/mongo-driver/bson"
-	// "github.com/joho/godotenv"
+	 "github.com/joho/godotenv"
 
 )
 
 var DbClient *mongo.Client
 func init() {
-	// err := godotenv.Load
-	// if err != nil {
-	// 	log.Fatalf("Could not connect to the database %v\n", err)
-	// }
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	mongoAddress :=os.Getenv("MONGO_ADDRESS")
 	
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_ADDRESS")))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoAddress))
 
 	if err != nil {
 		log.Fatalf("Could not connect to the database %v\n", err)
 	}
     DbClient = client
+	err = DbClient.Ping(ctx, readpref.Primary())
+	if err != nil {
+
+		log.Fatalf("Mongo db not available: %v\n", err)
+	}
 }
 
 func CreateUser(user *models.User) (*models.User, error){
-	_, err := DbClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("USER_COLLECTION")).InsertOne(context.Background(), user)
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+	dbName := os.Getenv("DB_NAME")
+	userCollection := os.Getenv("USER_COLLECTION")
+
+
+	_, err := DbClient.Database(dbName).Collection(userCollection).InsertOne(context.Background(), user)
 	
 	return user, err
 }
 func CheckUserExists(email string) bool {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+	dbName := os.Getenv("DB_NAME")
+	userCollection := os.Getenv("USER_COLLECTION")
+
 	query := bson.M{
 		"email": email,
 	}
-	count, err := DbClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("USER_COLLECTION")).CountDocuments(context.Background(), query)
+	count, err := DbClient.Database(dbName).Collection(userCollection).CountDocuments(context.Background(), query)
 	if err != nil {
 		return false
 	}
@@ -50,9 +72,16 @@ func CheckUserExists(email string) bool {
 }
 
 func GetAllUsers() ([]models.User, error) {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+	dbName := os.Getenv("DB_NAME")
+	userCollection := os.Getenv("USER_COLLECTION")
+
 	var users []models.User
 
-	cursor, err := DbClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("USER_COLLECTION")).Find(context.Background(), bson.M{})
+	cursor, err := DbClient.Database(dbName).Collection(userCollection).Find(context.Background(), bson.M{})
 	if err != nil {
 		return nil, err
 	}
@@ -64,11 +93,18 @@ func GetAllUsers() ([]models.User, error) {
 }
 
 func GetUserByEmail(email string) (*models.User, error) {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+	dbName := os.Getenv("DB_NAME")
+	userCollection := os.Getenv("USER_COLLECTION")
+
 	var user models.User
 	query := bson.M{
 		"email": email,
 	}
-	err := DbClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("USER_COLLECTION")).FindOne(context.Background(), query).Decode(&user)
+	err := DbClient.Database(dbName).Collection(userCollection).FindOne(context.Background(), query).Decode(&user)
 
 	if err != nil {
 		return nil, err
@@ -77,14 +113,28 @@ func GetUserByEmail(email string) (*models.User, error) {
 }
 
 func CreateFlight (flight *models.Flight) (*models.Flight, error) {
-	_, err := DbClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("FLIGHT_COLLECTION")).InsertOne(context.Background(), flight)
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+	dbName := os.Getenv("DB_NAME")
+	userCollection := os.Getenv("USER_COLLECTION")
+
+	_, err := DbClient.Database(dbName).Collection(userCollection).InsertOne(context.Background(), flight)
 
 	return flight, err
 }
 func GetAllFlight ()([]models.Flight, error){
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+	dbName := os.Getenv("DB_NAME")
+	flightCollection := os.Getenv("FLIGHT_COLLECTION")
+
 	var flight []models.Flight
 
-	cursor, err := DbClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("FLIGHT_COLLECTION")).Find(context.Background(), bson.M{})
+	cursor, err := DbClient.Database(dbName).Collection(flightCollection).Find(context.Background(), bson.M{})
 	if err != nil {
 		return nil, err
 	}
@@ -96,11 +146,18 @@ func GetAllFlight ()([]models.Flight, error){
 }
 
 func GetFlightByID (flightId string)(*models.Flight, error){
- 	var flight models.Flight
+ 	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+	dbName := os.Getenv("DB_NAME")
+	flightCollection := os.Getenv("FLIGHT_COLLECTION")
+	
+	var flight models.Flight
 	 query := bson.M{
 		"id": flightId,
 	 }
-	 err := DbClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("FLIGHT_COLLECTION")).FindOne(context.Background(), query).Decode(&flight)
+	 err := DbClient.Database(dbName).Collection(flightCollection).FindOne(context.Background(), query).Decode(&flight)
 	 if err != nil {
 		 return nil, err
 	 } 
@@ -116,6 +173,12 @@ func UpdateFlight (
 	 Arrival_time string,
 	 Price int,
 	 Available_seats int) error {
+		 err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+	dbName := os.Getenv("DB_NAME")
+	flightCollection := os.Getenv("FLIGHT_COLLECTION")
 
 	filterQuery := bson.M{
 	"id": flightId,
@@ -132,7 +195,7 @@ func UpdateFlight (
 		},
 	}
 
-	_, err := DbClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("FLIGHT_COLLECTION")).UpdateOne(context.Background(),filterQuery, updateQuery)
+	_, err := DbClient.Database(dbName).Collection(flightCollection).UpdateOne(context.Background(),filterQuery, updateQuery)
 	if err != nil {
 		return err
 	}
@@ -140,11 +203,18 @@ func UpdateFlight (
 }
 
 func DeleteFlight(flightId, AdminId string) error {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+	dbName := os.Getenv("DB_NAME")
+	flightCollection := os.Getenv("FLIGHT_COLLECTION")
+
 	query := bson.M{
 		"id": "flightId",
 		"admin_id": "AdminId",
 	}
-	_, err := DbClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("FLIGHT_COLLECTION")).DeleteOne(context.Background(), query)
+	_, err := DbClient.Database(dbName).Collection(flightCollection).DeleteOne(context.Background(), query)
 	if err != nil {
 		return err
 	}
