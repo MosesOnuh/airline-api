@@ -13,7 +13,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func SignupHandler(c *gin.Context) {
+type handler struct {
+	store Db.Datastore
+}
+
+func (h *handler) SignupHandler(c *gin.Context) {
 	type SignupRequest struct {
 		Name     string `json:"name"`
 		Email    string `json:"email"`
@@ -29,7 +33,7 @@ func SignupHandler(c *gin.Context) {
 		})
 		return
 	}
-	userCheck := Db.CheckUserExists(signupReq.Email)
+	userCheck := h.store.CheckUserExists(signupReq.Email)
 	if userCheck {
 		c.JSON(500, gin.H{
 			"error": "User already exists, use another email",
@@ -55,7 +59,7 @@ func SignupHandler(c *gin.Context) {
 		TS:       time.Now(),
 	}
 
-	_, err = Db.CreateUser(&user)
+	_, err = h.store.CreateUser(&user)
 	if err != nil {
 		fmt.Println("error saving user", err)
 		c.JSON(500, gin.H{
@@ -77,7 +81,7 @@ func SignupHandler(c *gin.Context) {
 	})
 }
 
-func LoginHandler(c *gin.Context) {
+func (h handler) LoginHandler(c *gin.Context) {
 	type loginDetails struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -91,7 +95,7 @@ func LoginHandler(c *gin.Context) {
 		})
 		return
 	}
-	user, err := Db.GetUserByEmail(loginReq.Email)
+	user, err := h.store.GetUserByEmail(loginReq.Email)
 	if err != nil {
 		fmt.Printf("error getting user from dn: %v\n", err)
 		c.JSON(500, gin.H{
@@ -114,8 +118,8 @@ func LoginHandler(c *gin.Context) {
 	})
 }
 
-func GetAllUserHandler(c *gin.Context) {
-	users, err := Db.GetAllUsers()
+func (h handler) GetAllUserHandler(c *gin.Context) {
+	users, err := h.store.GetAllUsers()
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "User not found",
@@ -133,7 +137,7 @@ func GetAllUserHandler(c *gin.Context) {
 // getallFlight
 // getSingleflight
 
-func CreateFlightHandler(c *gin.Context) {
+func (h handler) CreateFlightHandler(c *gin.Context) {
 	authorization := c.Request.Header.Get("Authorization")
 	if authorization == "" {
 		c.JSON(401, gin.H{
@@ -176,7 +180,7 @@ func CreateFlightHandler(c *gin.Context) {
 		Available_seats:    flightDetails.Available_seats,
 	}
 
-	_, err = Db.CreateFlight(&flight)
+	_, err = h.store.CreateFlight(&flight)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "Could not process request, unsaved flight data",
@@ -189,9 +193,9 @@ func CreateFlightHandler(c *gin.Context) {
 	})
 }
 
-func GetSingleFlightHandler(c *gin.Context) {
+func (h handler) GetSingleFlightHandler(c *gin.Context) {
 	taskId := c.Param("id")
-	task, err := Db.GetFlightByID(taskId)
+	task, err := h.store.GetFlightByID(taskId)
 	if err != nil {
 		c.JSON(404, gin.H{
 			"error": "invalid task id" + taskId,
@@ -204,7 +208,7 @@ func GetSingleFlightHandler(c *gin.Context) {
 	})
 }
 
-func UpdateFlightHandler(c *gin.Context) {
+func (h handler) UpdateFlightHandler(c *gin.Context) {
 	flightId := c.Param("id")
 
 	var flight models.Flight
@@ -215,7 +219,7 @@ func UpdateFlightHandler(c *gin.Context) {
 		})
 		return
 	}
-	err = Db.UpdateFlight(flightId, flight.Country, flight.Departure_location, flight.Arrival_location, flight.Departure_time, flight.Arrival_time, flight.Price, flight.Available_seats)
+	err = h.store.UpdateFlight(flightId, flight.Country, flight.Departure_location, flight.Arrival_location, flight.Departure_time, flight.Arrival_time, flight.Price, flight.Available_seats)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "Flight could not be updated",
@@ -227,7 +231,7 @@ func UpdateFlightHandler(c *gin.Context) {
 	})
 }
 
-func DeleteFlightHandler(c *gin.Context) {
+func (h handler) DeleteFlightHandler(c *gin.Context) {
 	authorization := c.Request.Header.Get("Authorization")
 	if authorization == "" {
 		c.JSON(401, gin.H{
@@ -251,7 +255,7 @@ func DeleteFlightHandler(c *gin.Context) {
 
 	flightId := c.Param("id")
 
-	err = Db.DeleteFlight(flightId, claims.UserId)
+	err = h.store.DeleteFlight(flightId, claims.UserId)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "flight could not be deleted",

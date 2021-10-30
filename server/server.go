@@ -1,12 +1,13 @@
 package server
 
 import (
-	"os"
+	// "os"
+
 	"github.com/MosesOnuh/airline-api/handlers"
 	"github.com/gin-gonic/gin"
 )
 
-func Run( port string) error {
+func Run(port string) error {
 	router := gin.Default()
 	router.POST("signupUser", handlers.SignupHandler)
 	router.POST("loginUser", handlers.LoginHandler)
@@ -17,9 +18,9 @@ func Run( port string) error {
 	router.GET("/getSingleFLight", handlers.GetSingleFlightHandler)
 	router.PATCH("/deleteFlight", handlers.DeleteFlightHandler)
 
-	err := router.Run(":" + os.Getenv("PORT"))
-		if err != nil {
-				return err
-			}
-			return nil
+	// err := router.Run(":" + os.Getenv("PORT"))
+	// if err != nil {
+	// 	return err
+	// }
+	// return nil
 }
