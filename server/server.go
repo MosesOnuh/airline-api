@@ -1,26 +1,25 @@
 package server
 
 import (
-	// "os"
-
 	"github.com/MosesOnuh/airline-api/handlers"
 	"github.com/gin-gonic/gin"
 )
+ 
 
-func Run(port string) error {
+func Run(Port string) error {
+	h := &handlers.Handler{}
 	router := gin.Default()
-	router.POST("signupUser", handlers.SignupHandler)
-	router.POST("loginUser", handlers.LoginHandler)
-	router.POST("/createFlight", handlers.CreateFlightHandler)
-	router.GET("/getFlight", handlers.CreateFlightHandler)
-	router.PATCH("/updateflight", handlers.UpdateFlightHandler)
-	//router.GET("/getAllFLight", handlers.GetAllFlightHandler)
-	router.GET("/getSingleFLight", handlers.GetSingleFlightHandler)
-	router.PATCH("/deleteFlight", handlers.DeleteFlightHandler)
-
-	// err := router.Run(":" + os.Getenv("PORT"))
-	// if err != nil {
-	// 	return err
-	// }
-	// return nil
+	router.POST("/signupUser", h.SignupHandler)
+	router.POST("/loginUser", h.LoginHandler)
+	router.POST("/createFlight", h.CreateFlightHandler)
+	router.GET("/getFlight", h.CreateFlightHandler)
+	router.PATCH("/updateflight", h.UpdateFlightHandler)
+	router.GET("/getSingleFLight", h.GetSingleFlightHandler)
+	router.PATCH("/deleteFlight", h.DeleteFlightHandler)
+	
+	err := router.Run(":" + Port)
+	if err != nil {
+		return err
+	}
+	return nil
 }

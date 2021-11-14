@@ -13,11 +13,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type handler struct {
+type Handler struct {
 	store Db.Datastore
 }
 
-func (h *handler) SignupHandler(c *gin.Context) {
+
+
+func (h *Handler) SignupHandler(c *gin.Context) {
 	type SignupRequest struct {
 		Name     string `json:"name"`
 		Email    string `json:"email"`
@@ -81,7 +83,7 @@ func (h *handler) SignupHandler(c *gin.Context) {
 	})
 }
 
-func (h handler) LoginHandler(c *gin.Context) {
+func (h Handler) LoginHandler(c *gin.Context) {
 	type loginDetails struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -118,7 +120,7 @@ func (h handler) LoginHandler(c *gin.Context) {
 	})
 }
 
-func (h handler) GetAllUserHandler(c *gin.Context) {
+func (h Handler) GetAllUserHandler(c *gin.Context) {
 	users, err := h.store.GetAllUsers()
 	if err != nil {
 		c.JSON(500, gin.H{
@@ -137,7 +139,7 @@ func (h handler) GetAllUserHandler(c *gin.Context) {
 // getallFlight
 // getSingleflight
 
-func (h handler) CreateFlightHandler(c *gin.Context) {
+func (h Handler) CreateFlightHandler(c *gin.Context) {
 	authorization := c.Request.Header.Get("Authorization")
 	if authorization == "" {
 		c.JSON(401, gin.H{
@@ -193,7 +195,7 @@ func (h handler) CreateFlightHandler(c *gin.Context) {
 	})
 }
 
-func (h handler) GetSingleFlightHandler(c *gin.Context) {
+func (h Handler) GetSingleFlightHandler(c *gin.Context) {
 	taskId := c.Param("id")
 	task, err := h.store.GetFlightByID(taskId)
 	if err != nil {
@@ -208,7 +210,7 @@ func (h handler) GetSingleFlightHandler(c *gin.Context) {
 	})
 }
 
-func (h handler) UpdateFlightHandler(c *gin.Context) {
+func (h Handler) UpdateFlightHandler(c *gin.Context) {
 	flightId := c.Param("id")
 
 	var flight models.Flight
@@ -231,7 +233,7 @@ func (h handler) UpdateFlightHandler(c *gin.Context) {
 	})
 }
 
-func (h handler) DeleteFlightHandler(c *gin.Context) {
+func (h Handler) DeleteFlightHandler(c *gin.Context) {
 	authorization := c.Request.Header.Get("Authorization")
 	if authorization == "" {
 		c.JSON(401, gin.H{
@@ -266,3 +268,16 @@ func (h handler) DeleteFlightHandler(c *gin.Context) {
 	}
 
 }
+
+// func Run(port string) error {
+// 	h := &Handler{}
+// 	router := gin.Default()
+// 	router.POST("signupUser", h.SignupHandler)
+// 	router.POST("loginUser", h.LoginHandler)
+// 	router.POST("/createFlight", h.CreateFlightHandler)
+// 	router.GET("/getFlight", h.CreateFlightHandler)
+// 	router.PATCH("/updateflight", h.UpdateFlightHandler)
+// 	// router.GET("/getAllFLight", h.GetAllFlightHandler)
+// 	router.GET("/getSingleFLight", h.GetSingleFlightHandler)
+// 	router.PATCH("/deleteFlight", h.DeleteFlightHandler)
+// }
