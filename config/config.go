@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	defaultPort             = "8080"
+	defaultPort             = "3000"
 	defaultSecret           = "secret"
 	defaultDbAddress        = "mongodb://localhost:27017"
 	defaultDbName           = "airline"

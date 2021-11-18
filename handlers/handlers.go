@@ -5,21 +5,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MosesOnuh/airline-api/Db"
+	"github.com/MosesOnuh/airline-api/db" 
 	"github.com/MosesOnuh/airline-api/auth"
 	"github.com/MosesOnuh/airline-api/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
+	
 )
 
 type Handler struct {
-	store Db.Datastore
+	Store db.Datastore
+	JwtHandler auth.TokenHandler
 }
 
 
 
-func (h *Handler) SignupHandler(c *gin.Context) {
+
+func (h Handler) SignupHandler(c *gin.Context) {
 	type SignupRequest struct {
 		Name     string `json:"name"`
 		Email    string `json:"email"`
@@ -35,7 +38,7 @@ func (h *Handler) SignupHandler(c *gin.Context) {
 		})
 		return
 	}
-	userCheck := h.store.CheckUserExists(signupReq.Email)
+	userCheck := h.Store.CheckUserExists(signupReq.Email)
 	if userCheck {
 		c.JSON(500, gin.H{
 			"error": "User already exists, use another email",
@@ -61,7 +64,7 @@ func (h *Handler) SignupHandler(c *gin.Context) {
 		TS:       time.Now(),
 	}
 
-	_, err = h.store.CreateUser(&user)
+	_, err = h.Store.CreateUser(&user)
 	if err != nil {
 		fmt.Println("error saving user", err)
 		c.JSON(500, gin.H{
@@ -69,7 +72,7 @@ func (h *Handler) SignupHandler(c *gin.Context) {
 		})
 		return
 	}
-	jwtTokenString, err := auth.CreateToken(user.ID)
+	jwtTokenString, err := h.JwtHandler.CreateToken(user.ID)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "invalid token",
@@ -97,7 +100,7 @@ func (h Handler) LoginHandler(c *gin.Context) {
 		})
 		return
 	}
-	user, err := h.store.GetUserByEmail(loginReq.Email)
+	user, err := h.Store.GetUserByEmail(loginReq.Email)
 	if err != nil {
 		fmt.Printf("error getting user from dn: %v\n", err)
 		c.JSON(500, gin.H{
@@ -113,15 +116,22 @@ func (h Handler) LoginHandler(c *gin.Context) {
 		})
 		return
 	}
+	jwtTokenString, err := h.JwtHandler.CreateToken(user.ID)
+	if err != nil {
+		c.JSON(500, gin.H{
+			"error": "invalid token",
+		})
+	}
+	
 	c.JSON(200, gin.H{
-		"message": "sign up successful",
-		"token":   "jwtToken",
+		"message": "Login successful",
+		"token":   jwtTokenString,
 		"data":    user,
 	})
 }
 
 func (h Handler) GetAllUserHandler(c *gin.Context) {
-	users, err := h.store.GetAllUsers()
+	users, err := h.Store.GetAllUsers()
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "User not found",
@@ -134,10 +144,6 @@ func (h Handler) GetAllUserHandler(c *gin.Context) {
 	})
 }
 
-// getsingleUser
-// Post flight
-// getallFlight
-// getSingleflight
 
 func (h Handler) CreateFlightHandler(c *gin.Context) {
 	authorization := c.Request.Header.Get("Authorization")
@@ -149,11 +155,11 @@ func (h Handler) CreateFlightHandler(c *gin.Context) {
 	}
 
 	payload := ""
-	splitTokenArray := strings.Split(authorization, "")
+	splitTokenArray := strings.Split(authorization, " ")
 	if len(splitTokenArray) > 1 {
 		payload = splitTokenArray[1]
 	}
-	claims, err := auth.ValidToken(payload)
+	claims, err := h.JwtHandler.ValidToken(payload)
 	if err != nil {
 		c.JSON(401, gin.H{
 			"error": "invalid jwt token",
@@ -173,17 +179,17 @@ func (h Handler) CreateFlightHandler(c *gin.Context) {
 	flight := models.Flight{
 		ID:                 flightId,
 		Country:            flightDetails.Country,
-		Admin_Id:           claims.Id,
+		Owner:              claims.UserId,
 		Departure_location: flightDetails.Departure_location,
 		Arrival_location:   flightDetails.Arrival_location,
 		Departure_time:     flightDetails.Departure_time,
 		Arrival_time:       flightDetails.Arrival_time,
-		Price:              flightDetails.Price,
-		Available_seats:    flightDetails.Available_seats,
+		Price:              flightDetails.Price,	
 	}
 
-	_, err = h.store.CreateFlight(&flight)
+	_, err = h.Store.CreateFlight(&flight)
 	if err != nil {
+		fmt.Println("error saving task", err)
 		c.JSON(500, gin.H{
 			"error": "Could not process request, unsaved flight data",
 		})
@@ -195,9 +201,45 @@ func (h Handler) CreateFlightHandler(c *gin.Context) {
 	})
 }
 
+func (h Handler) GetAllFlightsHandler(c *gin.Context){
+	authorization := c.Request.Header.Get("Authorization")
+	if authorization == "" {
+		c.JSON(401, gin.H{
+			"error": "auth token not supplied",
+		})
+		return
+	}
+
+	payload := ""
+	splitTokenArray := strings.Split(authorization, " ")
+	if len(splitTokenArray) > 1 {
+		payload = splitTokenArray[1]
+	}
+	claims, err := h.JwtHandler.ValidToken(payload)
+	if err != nil {
+		c.JSON(401, gin.H{
+			"error": "invalid jwt token",
+		})
+		return
+	}
+
+	flights, err := h.Store.GetAllFlight(claims.UserId)
+	if err != nil {
+		c.JSON(500, gin.H{
+			"error": "Could not process request, could get tasks",
+		})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"message": "success",
+		"data":    flights,
+    })
+}
+
 func (h Handler) GetSingleFlightHandler(c *gin.Context) {
 	taskId := c.Param("id")
-	task, err := h.store.GetFlightByID(taskId)
+	task, err := h.Store.GetFlightByID(taskId)
 	if err != nil {
 		c.JSON(404, gin.H{
 			"error": "invalid task id" + taskId,
@@ -211,9 +253,32 @@ func (h Handler) GetSingleFlightHandler(c *gin.Context) {
 }
 
 func (h Handler) UpdateFlightHandler(c *gin.Context) {
+	authorization := c.Request.Header.Get("Authorization")
+	if authorization == "" {
+		c.JSON(401, gin.H{
+			"error": "auth token not supplied",
+		})
+		return
+	}
+
+	payload := ""
+	splitTokenArray := strings.Split(authorization, " ")
+	if len(splitTokenArray) > 1 {
+		payload = splitTokenArray[1]
+	}
+	claims, error := h.JwtHandler.ValidToken(payload)
+	if error != nil {
+		c.JSON(401, gin.H{
+			"error": "invalid jwt token",
+		})
+		return
+	}
+	owner := claims.UserId
+	
 	flightId := c.Param("id")
 
 	var flight models.Flight
+
 	err := c.ShouldBindJSON(&flight)
 	if err != nil {
 		c.JSON(400, gin.H{
@@ -221,7 +286,7 @@ func (h Handler) UpdateFlightHandler(c *gin.Context) {
 		})
 		return
 	}
-	err = h.store.UpdateFlight(flightId, flight.Country, flight.Departure_location, flight.Arrival_location, flight.Departure_time, flight.Arrival_time, flight.Price, flight.Available_seats)
+	err = h.Store.UpdateFlight(flightId, owner, flight.Country, flight.Departure_location, flight.Arrival_location, flight.Departure_time, flight.Arrival_time, flight.Price)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "Flight could not be updated",
@@ -243,11 +308,11 @@ func (h Handler) DeleteFlightHandler(c *gin.Context) {
 	}
 
 	payload := ""
-	splitTokenArray := strings.Split(authorization, "")
+	splitTokenArray := strings.Split(authorization, " ")
 	if len(splitTokenArray) > 1 {
 		payload = splitTokenArray[1]
 	}
-	claims, err := auth.ValidToken(payload)
+	claims, err := h.JwtHandler.ValidToken(payload)
 	if err != nil {
 		c.JSON(401, gin.H{
 			"error": "invalid jwt token",
@@ -257,27 +322,16 @@ func (h Handler) DeleteFlightHandler(c *gin.Context) {
 
 	flightId := c.Param("id")
 
-	err = h.store.DeleteFlight(flightId, claims.UserId)
+	err = h.Store.DeleteFlight(flightId, claims.UserId)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "flight could not be deleted",
 		})
-		c.JSON(200, gin.H{
+		}
+	c.JSON(200, gin.H{
 			"message": "Task deleted",
 		})
-	}
+	
 
 }
 
-// func Run(port string) error {
-// 	h := &Handler{}
-// 	router := gin.Default()
-// 	router.POST("signupUser", h.SignupHandler)
-// 	router.POST("loginUser", h.LoginHandler)
-// 	router.POST("/createFlight", h.CreateFlightHandler)
-// 	router.GET("/getFlight", h.CreateFlightHandler)
-// 	router.PATCH("/updateflight", h.UpdateFlightHandler)
-// 	// router.GET("/getAllFLight", h.GetAllFlightHandler)
-// 	router.GET("/getSingleFLight", h.GetSingleFlightHandler)
-// 	router.PATCH("/deleteFlight", h.DeleteFlightHandler)
-// }

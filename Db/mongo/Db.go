@@ -1,8 +1,8 @@
-package Db
+package db
 import (
 	"context"
 	"time"
-	"github.com/MosesOnuh/airline-api/Db"
+	"github.com/MosesOnuh/airline-api/db"
 	"github.com/MosesOnuh/airline-api/models"
     "go.mongodb.org/mongo-driver/mongo"
     "go.mongodb.org/mongo-driver/mongo/options"
@@ -12,27 +12,17 @@ import (
 
 )
 
-//mongoStore, _, err := mongo.New(cfg.DBURL, cfg.DBName)
-
 type mongoStore struct {
 	client *mongo.Client
 	dbName string
 	userCollection string
 	flightCollection string
-	ticketCollection string
 }
 
-var _ Db.Datastore = &mongoStore{}
-
-
-// defaultDbAddress        = "mongodb://localhost:27017"
-// 	defaultDbName           = "airline"
-// 	defaultUserCollection   = "users"
-// 	defaultFlightCollection = "flights"
-// 	defaultTicketCollection = "tickets"
+var _ db.Datastore = &mongoStore{}
 
 //New returns an instance of mongo store
-func New(dbAddress, dbName, userCollection, flightCollection, ticketCollection string) (Db.Datastore, *mongo.Client, error) {
+func New(dbAddress, dbName, userCollection, flightCollection, ticketCollection string) (db.Datastore, *mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(dbAddress))
@@ -44,7 +34,6 @@ func New(dbAddress, dbName, userCollection, flightCollection, ticketCollection s
 	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
 		return nil, nil, err
-		// log.Fatalf("Mongo db not available: %v\n", err)
 	}
 
 	return &mongoStore{
@@ -52,7 +41,6 @@ func New(dbAddress, dbName, userCollection, flightCollection, ticketCollection s
 		dbName: dbName,
 		userCollection: userCollection,
 		flightCollection: flightCollection,
-		ticketCollection: ticketCollection,
 	}, client, nil
 }
 
@@ -80,7 +68,7 @@ func (m mongoStore) CheckUserExists(email string) bool {
 	if err != nil {
 		return false
 	}
-	if count > 1 {
+	if count > 0 {
 		return true
 	}
 	return false
@@ -89,7 +77,7 @@ func (m mongoStore) CheckUserExists(email string) bool {
 func (m mongoStore) GetAllUsers() ([]models.User, error) {
 	
 	var users []models.User
-
+	
 	cursor, err := m.dbCol(m.userCollection).Find(context.Background(), bson.M{})
 	if err != nil {
 		return nil, err
@@ -98,7 +86,9 @@ func (m mongoStore) GetAllUsers() ([]models.User, error) {
 	if err != nil {
 		return nil, err
 	}
+	
 	return users, nil
+	
 }
 
 func(m mongoStore) GetUserByEmail(email string) (*models.User, error) {
@@ -119,20 +109,6 @@ func (m mongoStore) CreateFlight (flight *models.Flight) (*models.Flight, error)
 
 	return flight, err
 }
-func (m mongoStore) GetAllFlight ()([]models.Flight, error){
-
-	var flight []models.Flight
-
-	cursor, err := m.dbCol(m.flightCollection).Find(context.Background(), bson.M{})
-	if err != nil {
-		return nil, err
-	}
-	err = cursor.All(context.Background(), &flight)
-	if err != nil {
-		return nil, err
-	}
-	return flight, nil
-}
 
 func (m mongoStore) GetFlightByID (flightId string)(*models.Flight, error){	
 	var flight models.Flight
@@ -146,28 +122,46 @@ func (m mongoStore) GetFlightByID (flightId string)(*models.Flight, error){
 	 return &flight, nil
 }
 
+func (m mongoStore) GetAllFlight (owner string) ([]models.Flight, error) {
+	var flights []models.Flight
+	query := bson.M{
+		"owner": owner,
+	}
+	cursor, err := m.dbCol(m.flightCollection).Find(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cursor.All(context.Background(), &flights)
+	if err != nil {
+		return nil, err
+	}
+
+	return flights, nil
+}
+
 func (m mongoStore) UpdateFlight (
 	flightId string,
+	 owner string,
 	 Country string,
 	 Departure_location string,
 	 Arrival_location string,
 	 Departure_time string,
 	 Arrival_time string,
-	 Price int,
-	 Available_seats int) error {
+	 Price int ) error {
 		
 	filterQuery := bson.M{
 	"id": flightId,
+	"owner": owner,
 	}
 	updateQuery := bson.M{
 		"$set": bson.M{
-			"country ": Country,
+			"country": Country,
 			"departure_location": Departure_location,
 			"arrival_location": Arrival_location,
 			"departure_time": Departure_time,
 			"arrival_time": Arrival_time,
 			"price": Price,
-			"available_seats": Available_seats,
 		},
 	}
 
@@ -178,11 +172,11 @@ func (m mongoStore) UpdateFlight (
 	return nil
 }
 
-func (m mongoStore) DeleteFlight(flightId, AdminId string) error {
+func (m mongoStore) DeleteFlight(flightId, owner string) error {
 
 	query := bson.M{
-		"id": "flightId",
-		"admin_id": "AdminId",
+		"id": flightId,
+		"owner": owner,
 	}
 	_, err := m.dbCol(m.flightCollection).DeleteOne(context.Background(), query)
 	if err != nil {
@@ -193,8 +187,4 @@ func (m mongoStore) DeleteFlight(flightId, AdminId string) error {
 }
 
 
-// func CreateTicket (ticket *models.Ticket) (*models.Ticket, error) {
-// 	_, err := DbClient.Database(os.Getenv("DB_NAME")).Collection(os.Getenv("TICKET_COLLECTION")).InsertOne(context.Background(), ticket)
 
-// 	return ticket, err
-// }
