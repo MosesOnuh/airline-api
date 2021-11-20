@@ -11,6 +11,10 @@ import (
 	 
 
 )
+const (
+	userCollection = users
+	flightCollection = available_flight
+)
 
 type mongoStore struct {
 	client *mongo.Client

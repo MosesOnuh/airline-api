@@ -5,22 +5,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MosesOnuh/airline-api/db" 
 	"github.com/MosesOnuh/airline-api/auth"
+	"github.com/MosesOnuh/airline-api/db"
 	"github.com/MosesOnuh/airline-api/models"
 	"github.com/gin-gonic/gin"
 	uuid "github.com/satori/go.uuid"
 	"golang.org/x/crypto/bcrypt"
-	
 )
 
 type Handler struct {
-	Store db.Datastore
+	Store      db.Datastore
 	JwtHandler auth.TokenHandler
 }
-
-
-
 
 func (h Handler) SignupHandler(c *gin.Context) {
 	type SignupRequest struct {
@@ -122,7 +118,7 @@ func (h Handler) LoginHandler(c *gin.Context) {
 			"error": "invalid token",
 		})
 	}
-	
+
 	c.JSON(200, gin.H{
 		"message": "Login successful",
 		"token":   jwtTokenString,
@@ -143,7 +139,6 @@ func (h Handler) GetAllUserHandler(c *gin.Context) {
 		"data":    users,
 	})
 }
-
 
 func (h Handler) CreateFlightHandler(c *gin.Context) {
 	authorization := c.Request.Header.Get("Authorization")
@@ -184,7 +179,7 @@ func (h Handler) CreateFlightHandler(c *gin.Context) {
 		Arrival_location:   flightDetails.Arrival_location,
 		Departure_time:     flightDetails.Departure_time,
 		Arrival_time:       flightDetails.Arrival_time,
-		Price:              flightDetails.Price,	
+		Price:              flightDetails.Price,
 	}
 
 	_, err = h.Store.CreateFlight(&flight)
@@ -201,7 +196,7 @@ func (h Handler) CreateFlightHandler(c *gin.Context) {
 	})
 }
 
-func (h Handler) GetAllFlightsHandler(c *gin.Context){
+func (h Handler) GetAllFlightsHandler(c *gin.Context) {
 	authorization := c.Request.Header.Get("Authorization")
 	if authorization == "" {
 		c.JSON(401, gin.H{
@@ -234,7 +229,7 @@ func (h Handler) GetAllFlightsHandler(c *gin.Context){
 	c.JSON(200, gin.H{
 		"message": "success",
 		"data":    flights,
-    })
+	})
 }
 
 func (h Handler) GetSingleFlightHandler(c *gin.Context) {
@@ -274,7 +269,7 @@ func (h Handler) UpdateFlightHandler(c *gin.Context) {
 		return
 	}
 	owner := claims.UserId
-	
+
 	flightId := c.Param("id")
 
 	var flight models.Flight
@@ -327,11 +322,9 @@ func (h Handler) DeleteFlightHandler(c *gin.Context) {
 		c.JSON(500, gin.H{
 			"error": "flight could not be deleted",
 		})
-		}
+	}
 	c.JSON(200, gin.H{
-			"message": "Task deleted",
-		})
-	
+		"message": "Task deleted",
+	})
 
 }
-

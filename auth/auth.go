@@ -6,8 +6,8 @@ import (
 
 	"github.com/MosesOnuh/airline-api/models"
 	"github.com/dgrijalva/jwt-go"
-
 )
+
 type TokenHandler interface {
 	CreateToken(userId string) (string, error)
 	ValidToken(jwtToken string) (*models.Claims, error)
@@ -43,7 +43,7 @@ func (t *tokenHandler) CreateToken(userId string) (string, error) {
 
 }
 
-func  (t *tokenHandler) ValidToken(jwtToken string) (*models.Claims, error) {
+func (t *tokenHandler) ValidToken(jwtToken string) (*models.Claims, error) {
 	claims := &models.Claims{}
 	keyFunc := func(token *jwt.Token) (i interface{}, e error) {
 		return []byte(t.jwtSecret), nil

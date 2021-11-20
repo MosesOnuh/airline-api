@@ -19,7 +19,7 @@ type User struct {
 
 type Flight struct {
 	ID                 string `json:"id" bson:"id"`
-	Owner          	   string `json:"owner" bson:"owner"`
+	Owner              string `json:"owner" bson:"owner"`
 	Country            string `json:"country" bson:"country"`
 	Departure_location string `json:"departure_location" bson:"departure_location"`
 	Arrival_location   string `json:"arrival_location" bson:"arrival_location"`
