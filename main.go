@@ -12,7 +12,7 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
-	datastore, _, err := db.New(cfg.DBAddress, cfg.DBName, cfg.UserCollection, cfg.FlightCollection, cfg.TicketCollection)
+	datastore, _, err := db.New(cfg.DBAddress, cfg.DBName)
 	if err != nil {
 		log.Fatalf("failed to open mongodb: %v", err)
 	}

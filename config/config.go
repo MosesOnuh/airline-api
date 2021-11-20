@@ -10,9 +10,6 @@ const (
 	defaultSecret           = "secret"
 	defaultDbAddress        = "mongodb://localhost:27017"
 	defaultDbName           = "airline"
-	defaultUserCollection   = "users"
-	defaultFlightCollection = "flights"
-	defaultTicketCollection = "tickets"
 )
 
 // Configuration contains all the config that the appliction needs
@@ -21,9 +18,6 @@ type Configurations struct {
 	JWTSectret       string `json:"jwt_secret"`
 	DBAddress        string `json:"db_address"`
 	DBName           string `json:"db_name"`
-	UserCollection   string `json:"user_collection"`
-	FlightCollection string `json:"flight_collection"`
-	TicketCollection string `json:"ticket_collection"`
 }
 
 func LoadConfig(filename ...string) *Configurations {
@@ -56,24 +50,6 @@ func LoadConfig(filename ...string) *Configurations {
 		dbName = defaultDbName
 	}
 	configurations.DBName = dbName
-
-	userCollection, ok := os.LookupEnv("USER_COLLECTION")
-	if !ok {
-		userCollection = defaultUserCollection
-	}
-	configurations.UserCollection = userCollection
-
-	flightCollection, ok := os.LookupEnv("FLIGHT_COLLECTION")
-	if !ok {
-		flightCollection = defaultFlightCollection
-	}
-	configurations.FlightCollection = flightCollection
-
-	ticketCollection, ok := os.LookupEnv("TICKET_COLLECTION")
-	if !ok {
-		ticketCollection = defaultTicketCollection
-	}
-	configurations.TicketCollection = ticketCollection
 
 	return configurations
 

@@ -12,21 +12,19 @@ import (
 
 )
 const (
-	userCollection = users
-	flightCollection = available_flight
+	userCollection = "users"
+	flightCollection = "available_flight"
 )
 
 type mongoStore struct {
 	client *mongo.Client
 	dbName string
-	userCollection string
-	flightCollection string
 }
 
 var _ db.Datastore = &mongoStore{}
 
 //New returns an instance of mongo store
-func New(dbAddress, dbName, userCollection, flightCollection, ticketCollection string) (db.Datastore, *mongo.Client, error) {
+func New(dbAddress, dbName string) (db.Datastore, *mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(dbAddress))
@@ -42,9 +40,7 @@ func New(dbAddress, dbName, userCollection, flightCollection, ticketCollection s
 
 	return &mongoStore{
 		client: client,
-		dbName: dbName,
-		userCollection: userCollection,
-		flightCollection: flightCollection,
+		dbName: dbName,	
 	}, client, nil
 }
 
@@ -55,7 +51,7 @@ func (m *mongoStore) dbCol(collectionName string) *mongo.Collection {
 
 
 func (m mongoStore) CreateUser(user *models.User) (*models.User, error) {
-	_, err := m.dbCol(m.userCollection).InsertOne(context.Background(), user)
+	_, err := m.dbCol(userCollection).InsertOne(context.Background(), user)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +64,7 @@ func (m mongoStore) CheckUserExists(email string) bool {
 	query := bson.M{
 		"email": email,
 	}
-	count, err := m.dbCol(m.userCollection).CountDocuments(context.Background(), query)
+	count, err := m.dbCol(userCollection).CountDocuments(context.Background(), query)
 	if err != nil {
 		return false
 	}
@@ -82,7 +78,7 @@ func (m mongoStore) GetAllUsers() ([]models.User, error) {
 	
 	var users []models.User
 	
-	cursor, err := m.dbCol(m.userCollection).Find(context.Background(), bson.M{})
+	cursor, err := m.dbCol(userCollection).Find(context.Background(), bson.M{})
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +96,7 @@ func(m mongoStore) GetUserByEmail(email string) (*models.User, error) {
 	query := bson.M{
 		"email": email,
 	}
-	err := m.dbCol(m.userCollection).FindOne(context.Background(), query).Decode(&user)
+	err := m.dbCol(userCollection).FindOne(context.Background(), query).Decode(&user)
 
 	if err != nil {
 		return nil, err
@@ -109,7 +105,7 @@ func(m mongoStore) GetUserByEmail(email string) (*models.User, error) {
 }
 
 func (m mongoStore) CreateFlight (flight *models.Flight) (*models.Flight, error) {
-	_, err := m.dbCol(m.flightCollection).InsertOne(context.Background(), flight)
+	_, err := m.dbCol(flightCollection).InsertOne(context.Background(), flight)
 
 	return flight, err
 }
@@ -119,7 +115,7 @@ func (m mongoStore) GetFlightByID (flightId string)(*models.Flight, error){
 	 query := bson.M{
 		"id": flightId,
 	 }
-	 err := m.dbCol(m.flightCollection).FindOne(context.Background(), query).Decode(&flight)
+	 err := m.dbCol(flightCollection).FindOne(context.Background(), query).Decode(&flight)
 	 if err != nil {
 		 return nil, err
 	 } 
@@ -131,7 +127,7 @@ func (m mongoStore) GetAllFlight (owner string) ([]models.Flight, error) {
 	query := bson.M{
 		"owner": owner,
 	}
-	cursor, err := m.dbCol(m.flightCollection).Find(context.Background(), query)
+	cursor, err := m.dbCol(flightCollection).Find(context.Background(), query)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +165,7 @@ func (m mongoStore) UpdateFlight (
 		},
 	}
 
-	_, err := m.dbCol(m.flightCollection).UpdateOne(context.Background(),filterQuery, updateQuery)
+	_, err := m.dbCol(flightCollection).UpdateOne(context.Background(),filterQuery, updateQuery)
 	if err != nil {
 		return err
 	}
@@ -182,7 +178,7 @@ func (m mongoStore) DeleteFlight(flightId, owner string) error {
 		"id": flightId,
 		"owner": owner,
 	}
-	_, err := m.dbCol(m.flightCollection).DeleteOne(context.Background(), query)
+	_, err := m.dbCol(flightCollection).DeleteOne(context.Background(), query)
 	if err != nil {
 		return err
 	}
